@@ -17,7 +17,7 @@ func NewOrchestratorServiceServer() *Handler {
 	}
 }
 
-func (h *Handler) RunBot(req *pb.DeployRequest, stream pb.OrchestratorService_ExecutarDeployServer) error {
+func (h *Handler) ExecuteDeploy(req *pb.DeployRequest, stream pb.OrchestratorService_ExecuteDeployServer) error {
 	fmt.Printf("Received DeployRequest: %+v\n", req)
 	logStream := make(chan *pb.LogResponse)
 	done := make(chan error, 1)
