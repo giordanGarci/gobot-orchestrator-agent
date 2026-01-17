@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package orchestrator;
+
+option go_package = "./pb";
+
+service OrchestratorService {
+    rpc ExecutarDeploy(DeployRequest) returns (stream LogResponse);
+}
+
+message DeployRequest {
+    string bot_id = 1;
+    string git_repo = 2;
+    string version = 3;
+}
+
+message LogResponse {
+  string line = 1;
+  string status = 2; // "INFO", "ERROR", "SUCCESS"
+}
