@@ -9,6 +9,7 @@ import (
 	"orchestrator/structs"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -23,25 +24,22 @@ func NewOrchestratorService() *OrchestratorService {
 }
 
 func (s *OrchestratorService) ExecuteDeployment(deployRequest *structs.Bot, logStream chan<- *pb.LogResponse) error {
-
 	basePath := fmt.Sprintf("./bots/%s/%s", deployRequest.BotID, deployRequest.Version)
-	s.mu.Lock()
-	s.bases_path[deployRequest.BotID] = basePath
-	s.mu.Unlock()
-	if err := os.MkdirAll(s.bases_path[deployRequest.BotID], 0755); err != nil {
-		return fmt.Errorf("erro ao criar diretório base: %v", err)
-	}
+	sourceDir := filepath.Join(basePath, "source")
 
-	if _, err := os.Stat(s.bases_path[deployRequest.BotID]); err == nil {
+	if _, err := os.Stat(sourceDir); err == nil {
 		logStream <- &pb.LogResponse{Line: "Versão já existe localmente. Pulando clone.", Status: "INFO"}
 		return nil
+	}
+
+	if err := os.MkdirAll(basePath, 0755); err != nil {
+		return fmt.Errorf("erro ao criar diretório base: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	destDir := fmt.Sprintf("%s/%s", s.bases_path[deployRequest.BotID], deployRequest.BotID)
-	cmd := exec.CommandContext(ctx, "git", "clone", "-b", deployRequest.Version, deployRequest.GitRepo, destDir)
+	cmd := exec.CommandContext(ctx, "git", "clone", "-b", deployRequest.Version, deployRequest.GitRepo, sourceDir)
 
 	stdout, _ := cmd.StdoutPipe()
 	stderr, _ := cmd.StderrPipe()
@@ -73,15 +71,14 @@ func (s *OrchestratorService) ExecuteDeployment(deployRequest *structs.Bot, logS
 
 func (s *OrchestratorService) RunBot(bot *structs.Bot, logStream chan<- *pb.LogResponse) error {
 
-	err := s.installRequirements(bot, logStream)
-
-	if err != nil {
+	if err := s.installRequirements(bot, logStream); err != nil {
 		logStream <- &pb.LogResponse{Line: fmt.Sprintf("Erro ao instalar dependências: %v", err), Status: "ERROR"}
 		return err
 	}
-	botPath := fmt.Sprintf("./bots/%s/%s", bot.BotID, bot.Version)
-	venvPath := fmt.Sprintf("%s/venv", botPath)
-	pythonPath := fmt.Sprintf("%s/bin/python", venvPath)
+	botPath := fmt.Sprintf("./bots/%s/%s/source", bot.BotID, bot.Version)
+	venvPath := fmt.Sprintf("./bots/%s/%s/venv", bot.BotID, bot.Version)
+	pythonPath := filepath.Join(venvPath, "bin", "python3")
+
 	cmd := exec.Command(pythonPath, "main.py")
 	cmd.Dir = botPath
 	stdout, _ := cmd.StdoutPipe()
@@ -112,26 +109,24 @@ func (s *OrchestratorService) RunBot(bot *structs.Bot, logStream chan<- *pb.LogR
 }
 
 func (s *OrchestratorService) installRequirements(bot *structs.Bot, logStream chan<- *pb.LogResponse) error {
-	botPath := fmt.Sprintf("./bots/%s/%s", bot.BotID, bot.Version)
-	reqFile := fmt.Sprintf("%s/requirements.txt", botPath)
+	basePath := fmt.Sprintf("./bots/%s/%s", bot.BotID, bot.Version)
+	sourceDir := filepath.Join(basePath, "source")
+	venvPath := filepath.Join(basePath, "venv")
+	reqFile := filepath.Join(sourceDir, "requirements.txt") // O arquivo está dentro de 'source'
 
 	if _, err := os.Stat(reqFile); os.IsNotExist(err) {
-		logStream <- &pb.LogResponse{Line: "Nenhum arquivo requirements.txt encontrado. Pulando instalação de dependências.", Status: "INFO"}
+		logStream <- &pb.LogResponse{Line: "requirements.txt não encontrado em 'source/'. Pulando.", Status: "INFO"}
 		return nil
 	}
-	// create virtual environment
-	venvPath := fmt.Sprintf("%s/venv", botPath)
 	cmd := exec.Command("python3", "-m", "venv", venvPath)
-	cmd.Dir = botPath
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("erro ao criar ambiente virtual: %v", err)
 	}
 	logStream <- &pb.LogResponse{Line: "Ambiente virtual criado com sucesso.", Status: "SUCCESS"}
 
-	// install requirements
-	pipPath := fmt.Sprintf("%s/bin/pip", venvPath)
+	pipPath := filepath.Join(venvPath, "bin", "pip")
 	installCmd := exec.Command(pipPath, "install", "-r", reqFile)
-	installCmd.Dir = botPath
+	installCmd.Dir = sourceDir
 	stdout, _ := installCmd.StdoutPipe()
 	stderr, _ := installCmd.StderrPipe()
 	if err := installCmd.Start(); err != nil {
