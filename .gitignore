@@ -1,0 +1,19 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.py
+*.pyc
+
+# Arquivos gerados
+*.xlsx
+*.log
+
+# Env e configs
+.env
+
+# MacOS
+.DS_Store
+
+# Bots baixados (gerados dinamicamente)
+cmd/server/bots/

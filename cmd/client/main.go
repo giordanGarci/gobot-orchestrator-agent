@@ -25,12 +25,16 @@ func main() {
 	defer conn.Close()
 
 	orchestratorClient := pb.NewOrchestratorServiceClient(conn)
+	fmt.Println("Started grpc client")
 
 	handler := &handlers.BotHandler{
 		AgentClient: orchestratorClient,
 	}
 
-	http.HandleFunc("POST /run", handler.RunBotHandler)
+	http.HandleFunc("POST /bots/run", handler.RunBotHandler)
+
+	fmt.Println("and starting HTTP server on :8080")
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
