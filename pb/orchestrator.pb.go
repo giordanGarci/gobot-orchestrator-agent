@@ -144,9 +144,9 @@ const file_proto_orchestrator_proto_rawDesc = "" +
 	"\aversion\x18\x03 \x01(\tR\aversion\"9\n" +
 	"\vLogResponse\x12\x12\n" +
 	"\x04line\x18\x01 \x01(\tR\x04line\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status2a\n" +
-	"\x13OrchestratorService\x12J\n" +
-	"\x0eExecutarDeploy\x12\x1b.orchestrator.DeployRequest\x1a\x19.orchestrator.LogResponse0\x01B\x06Z\x04./pbb\x06proto3"
+	"\x06status\x18\x02 \x01(\tR\x06status2`\n" +
+	"\x13OrchestratorService\x12I\n" +
+	"\rExecuteDeploy\x12\x1b.orchestrator.DeployRequest\x1a\x19.orchestrator.LogResponse0\x01B\x06Z\x04./pbb\x06proto3"
 
 var (
 	file_proto_orchestrator_proto_rawDescOnce sync.Once
@@ -166,8 +166,8 @@ var file_proto_orchestrator_proto_goTypes = []any{
 	(*LogResponse)(nil),   // 1: orchestrator.LogResponse
 }
 var file_proto_orchestrator_proto_depIdxs = []int32{
-	0, // 0: orchestrator.OrchestratorService.ExecutarDeploy:input_type -> orchestrator.DeployRequest
-	1, // 1: orchestrator.OrchestratorService.ExecutarDeploy:output_type -> orchestrator.LogResponse
+	0, // 0: orchestrator.OrchestratorService.ExecuteDeploy:input_type -> orchestrator.DeployRequest
+	1, // 1: orchestrator.OrchestratorService.ExecuteDeploy:output_type -> orchestrator.LogResponse
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

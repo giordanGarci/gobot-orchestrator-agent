@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	OrchestratorService_ExecutarDeploy_FullMethodName = "/orchestrator.OrchestratorService/ExecutarDeploy"
+	OrchestratorService_ExecuteDeploy_FullMethodName = "/orchestrator.OrchestratorService/ExecuteDeploy"
 )
 
 // OrchestratorServiceClient is the client API for OrchestratorService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OrchestratorServiceClient interface {
-	ExecutarDeploy(ctx context.Context, in *DeployRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogResponse], error)
+	ExecuteDeploy(ctx context.Context, in *DeployRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogResponse], error)
 }
 
 type orchestratorServiceClient struct {
@@ -37,9 +37,9 @@ func NewOrchestratorServiceClient(cc grpc.ClientConnInterface) OrchestratorServi
 	return &orchestratorServiceClient{cc}
 }
 
-func (c *orchestratorServiceClient) ExecutarDeploy(ctx context.Context, in *DeployRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogResponse], error) {
+func (c *orchestratorServiceClient) ExecuteDeploy(ctx context.Context, in *DeployRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &OrchestratorService_ServiceDesc.Streams[0], OrchestratorService_ExecutarDeploy_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &OrchestratorService_ServiceDesc.Streams[0], OrchestratorService_ExecuteDeploy_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -54,13 +54,13 @@ func (c *orchestratorServiceClient) ExecutarDeploy(ctx context.Context, in *Depl
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type OrchestratorService_ExecutarDeployClient = grpc.ServerStreamingClient[LogResponse]
+type OrchestratorService_ExecuteDeployClient = grpc.ServerStreamingClient[LogResponse]
 
 // OrchestratorServiceServer is the server API for OrchestratorService service.
 // All implementations must embed UnimplementedOrchestratorServiceServer
 // for forward compatibility.
 type OrchestratorServiceServer interface {
-	ExecutarDeploy(*DeployRequest, grpc.ServerStreamingServer[LogResponse]) error
+	ExecuteDeploy(*DeployRequest, grpc.ServerStreamingServer[LogResponse]) error
 	mustEmbedUnimplementedOrchestratorServiceServer()
 }
 
@@ -71,8 +71,8 @@ type OrchestratorServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedOrchestratorServiceServer struct{}
 
-func (UnimplementedOrchestratorServiceServer) ExecutarDeploy(*DeployRequest, grpc.ServerStreamingServer[LogResponse]) error {
-	return status.Error(codes.Unimplemented, "method ExecutarDeploy not implemented")
+func (UnimplementedOrchestratorServiceServer) ExecuteDeploy(*DeployRequest, grpc.ServerStreamingServer[LogResponse]) error {
+	return status.Error(codes.Unimplemented, "method ExecuteDeploy not implemented")
 }
 func (UnimplementedOrchestratorServiceServer) mustEmbedUnimplementedOrchestratorServiceServer() {}
 func (UnimplementedOrchestratorServiceServer) testEmbeddedByValue()                             {}
@@ -95,16 +95,16 @@ func RegisterOrchestratorServiceServer(s grpc.ServiceRegistrar, srv Orchestrator
 	s.RegisterService(&OrchestratorService_ServiceDesc, srv)
 }
 
-func _OrchestratorService_ExecutarDeploy_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _OrchestratorService_ExecuteDeploy_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(DeployRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(OrchestratorServiceServer).ExecutarDeploy(m, &grpc.GenericServerStream[DeployRequest, LogResponse]{ServerStream: stream})
+	return srv.(OrchestratorServiceServer).ExecuteDeploy(m, &grpc.GenericServerStream[DeployRequest, LogResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type OrchestratorService_ExecutarDeployServer = grpc.ServerStreamingServer[LogResponse]
+type OrchestratorService_ExecuteDeployServer = grpc.ServerStreamingServer[LogResponse]
 
 // OrchestratorService_ServiceDesc is the grpc.ServiceDesc for OrchestratorService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -115,8 +115,8 @@ var OrchestratorService_ServiceDesc = grpc.ServiceDesc{
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "ExecutarDeploy",
-			Handler:       _OrchestratorService_ExecutarDeploy_Handler,
+			StreamName:    "ExecuteDeploy",
+			Handler:       _OrchestratorService_ExecuteDeploy_Handler,
 			ServerStreams: true,
 		},
 	},

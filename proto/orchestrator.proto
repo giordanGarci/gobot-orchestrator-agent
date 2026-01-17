@@ -5,7 +5,7 @@ package orchestrator;
 option go_package = "./pb";
 
 service OrchestratorService {
-    rpc ExecutarDeploy(DeployRequest) returns (stream LogResponse);
+    rpc ExecuteDeploy(DeployRequest) returns (stream LogResponse);
 }
 
 message DeployRequest {
