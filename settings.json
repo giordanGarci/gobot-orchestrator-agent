@@ -1,0 +1,11 @@
+{
+    "emmet.includeLanguages": {
+        "templ": "html"
+    },
+    "tailwindCSS.includeLanguages": {
+        "templ": "html"
+    },
+    "files.associations": {
+        "*.templ": "templ"
+    }
+}
