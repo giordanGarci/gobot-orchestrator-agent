@@ -58,6 +58,11 @@ func (s *OrchestratorService) ExecuteDeployment(deployRequest *structs.Bot, logS
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
+	logStream <- &pb.LogResponse{
+		Line:   fmt.Sprintf("Executando: git clone -b %s %s %s", deployRequest.Version, deployRequest.GitRepo, sourceDir),
+		Status: "INFO",
+	}
+
 	cmd := exec.CommandContext(ctx, "git", "clone", "-b", deployRequest.Version, deployRequest.GitRepo, sourceDir)
 
 	stdout, _ := cmd.StdoutPipe()
@@ -68,7 +73,10 @@ func (s *OrchestratorService) ExecuteDeployment(deployRequest *structs.Bot, logS
 	}
 
 	var wg sync.WaitGroup
-	senLogs := func(r io.Reader) {
+	var stderrLines []string
+	var stderrMu sync.Mutex
+
+	sendStdout := func(r io.Reader) {
 		defer wg.Done()
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
@@ -79,15 +87,31 @@ func (s *OrchestratorService) ExecuteDeployment(deployRequest *structs.Bot, logS
 		}
 	}
 
+	sendStderr := func(r io.Reader) {
+		defer wg.Done()
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			line := sanitizeUTF8(scanner.Text())
+			stderrMu.Lock()
+			stderrLines = append(stderrLines, line)
+			stderrMu.Unlock()
+			logStream <- &pb.LogResponse{
+				Line:   line,
+				Status: "INFO",
+			}
+		}
+	}
+
 	wg.Add(2)
-	go senLogs(stdout)
-	go senLogs(stderr)
+	go sendStdout(stdout)
+	go sendStderr(stderr)
 
 	cmdErr := cmd.Wait()
 	wg.Wait() // Aguarda todas as goroutines terminarem de ler
 
 	if cmdErr != nil {
-		return fmt.Errorf("erro durante o git clone: %v", cmdErr)
+		errMsg := strings.Join(stderrLines, "; ")
+		return fmt.Errorf("erro durante o git clone: %v - stderr: %s", cmdErr, errMsg)
 	}
 
 	logStream <- &pb.LogResponse{Line: "Clone finalizado com sucesso!", Status: "SUCCESS"}
