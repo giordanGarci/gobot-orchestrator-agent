@@ -1,0 +1,38 @@
+package templates
+
+templ DeployForm() {
+	<div class="max-w-md bg-gray-800 p-6 rounded-lg shadow-lg mx-auto mt-10">
+		<h2 class="text-lg mb-4 font-semibold">Iniciar Robô</h2>
+		
+		<form hx-post="/bots/run" 
+			  hx-ext='json-enc' 
+			  hx-target="#log-container" 
+			  hx-swap="innerHTML"
+			  class="space-y-4">
+			
+			<div>
+				<label class="block text-sm text-gray-400">Bot ID</label>
+				<input name="bot_id" type="text" class="w-full bg-gray-700 border-none rounded p-2 mt-1" placeholder="ex: rpa-01"/>
+			</div>
+			
+			<div>
+				<label class="block text-sm text-gray-400">Git Repo</label>
+				<input name="git_repo" type="text" class="w-full bg-gray-700 border-none rounded p-2 mt-1" placeholder="https://github.com/..."/>
+			</div>
+
+			<div>
+				<label class="block text-sm text-gray-400">Versão</label>
+				<input name="version" type="text" class="w-full bg-gray-700 border-none rounded p-2 mt-1" placeholder="1.0.0"/>
+			</div>
+
+			<button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded font-bold transition">
+				rodar o bot 🚀
+			</button>
+		</form>
+        <div hx-ext="sse" sse-connect="/bots/run" sse-swap="message" class="bg-black p-4 h-64 overflow-y-auto">
+            <div id="log-container" class="mt-6 p-4 bg-black rounded text-green-500 font-mono text-sm h-64 overflow-y-auto">
+                Aguardando comando...
+		</div>
+    </div>
+	</div>
+}
