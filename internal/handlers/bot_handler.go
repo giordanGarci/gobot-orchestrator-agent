@@ -22,6 +22,16 @@ func NewBotHandler(agentClient pb.OrchestratorServiceClient) *BotHandler {
 }
 
 func (h *BotHandler) RunBotHandler(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming não suportado", http.StatusInternalServerError)
+		return
+	}
+
 	var bot structs.Bot
 	if err := json.NewDecoder(r.Body).Decode(&bot); err != nil {
 		http.Error(w, "Invalid request payload: "+err.Error(), http.StatusBadRequest)
@@ -38,21 +48,39 @@ func (h *BotHandler) RunBotHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to start bot deployment: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	go func() {
-		for {
-			logMsg, err := stream.Recv()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				log.Printf("Erro no streaming: %v", err)
-				break
-			}
-			// Here you would typically write the logMsg to a websocket or another streaming mechanism
-			// For simplicity, we are just printing it to the server console
-			fmt.Printf("[%s] %s: %s\n", bot.BotID, logMsg.Status, logMsg.Line)
+
+	// Loop síncrono - mantém a conexão aberta até terminar
+	for {
+		logMsg, err := stream.Recv()
+		if err == io.EOF {
+			// Envia mensagem final
+			fmt.Fprintf(w, "data: <div class='text-green-400 font-bold'>✓ Execução finalizada!</div>\n\n")
+			flusher.Flush()
+			break
 		}
-	}()
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Deploy concluído com sucesso!"))
+		if err != nil {
+			log.Printf("Erro no streaming: %v", err)
+			fmt.Fprintf(w, "data: <div class='text-red-400'>[ERROR] %v</div>\n\n", err)
+			flusher.Flush()
+			break
+		}
+
+		// Define cor baseada no status
+		colorClass := "text-gray-300"
+		switch logMsg.Status {
+		case "SUCCESS":
+			colorClass = "text-green-400"
+		case "ERROR":
+			colorClass = "text-red-400"
+		case "INFO":
+			colorClass = "text-blue-300"
+		}
+
+		fmt.Fprintf(w, "data: <div class='%s'>[%s] %s</div>\n\n",
+			colorClass, logMsg.Status, logMsg.Line)
+		flusher.Flush()
+
+		// Log no console do servidor também
+		fmt.Printf("[%s] %s: %s\n", bot.BotID, logMsg.Status, logMsg.Line)
+	}
 }

@@ -5,9 +5,11 @@ import (
 	"log"
 	"net/http"
 	"orchestrator/internal/handlers"
+	"orchestrator/internal/templates"
 	"orchestrator/pb"
 	"time"
 
+	"github.com/a-h/templ"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -32,6 +34,7 @@ func main() {
 	}
 
 	http.HandleFunc("POST /bots/run", handler.RunBotHandler)
+	http.Handle("/", templ.Handler(templates.Layout(templates.DeployForm())))
 
 	fmt.Println("and starting HTTP server on :8080")
 
