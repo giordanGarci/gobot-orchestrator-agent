@@ -22,11 +22,28 @@ func NewBotHandler(agentClient pb.OrchestratorServiceClient) *BotHandler {
 }
 
 func (h *BotHandler) RunBotHandler(w http.ResponseWriter, r *http.Request) {
+
+	// Headers para streaming
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+	w.Header().Set("Transfer-Encoding", "chunked")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming não suportado", http.StatusInternalServerError)
+		return
+	}
+
 	var bot structs.Bot
 	if err := json.NewDecoder(r.Body).Decode(&bot); err != nil {
 		http.Error(w, "Invalid request payload: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// Força o início da resposta imediatamente
+	flusher.Flush()
 
 	ctx := context.Background()
 	stream, err := h.AgentClient.ExecuteDeploy(ctx, &pb.DeployRequest{
@@ -38,21 +55,39 @@ func (h *BotHandler) RunBotHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to start bot deployment: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	go func() {
-		for {
-			logMsg, err := stream.Recv()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				log.Printf("Erro no streaming: %v", err)
-				break
-			}
-			// Here you would typically write the logMsg to a websocket or another streaming mechanism
-			// For simplicity, we are just printing it to the server console
-			fmt.Printf("[%s] %s: %s\n", bot.BotID, logMsg.Status, logMsg.Line)
+
+	// Loop síncrono - mantém a conexão aberta até terminar
+	for {
+		logMsg, err := stream.Recv()
+		if err == io.EOF {
+			// Envia mensagem final
+			fmt.Fprintf(w, "<div class='text-green-400 font-bold'>✓ Execução finalizada!</div>")
+			flusher.Flush()
+			break
 		}
-	}()
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Deploy concluído com sucesso!"))
+		if err != nil {
+			log.Printf("Erro no streaming: %v", err)
+			fmt.Fprintf(w, "<div class='text-red-400'>[ERROR] %v</div>", err)
+			flusher.Flush()
+			break
+		}
+
+		// Define cor baseada no status
+		colorClass := "text-gray-300"
+		switch logMsg.Status {
+		case "SUCCESS":
+			colorClass = "text-green-400"
+		case "ERROR":
+			colorClass = "text-red-400"
+		case "INFO":
+			colorClass = "text-blue-300"
+		}
+
+		fmt.Fprintf(w, "<div class='%s'>[%s] %s</div>",
+			colorClass, logMsg.Status, logMsg.Line)
+		flusher.Flush()
+
+		// Log no console do servidor também
+		fmt.Printf("[%s] %s: %s\n", bot.BotID, logMsg.Status, logMsg.Line)
+	}
 }
