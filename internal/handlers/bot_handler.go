@@ -23,7 +23,6 @@ func NewBotHandler(agentClient pb.OrchestratorServiceClient) *BotHandler {
 
 func (h *BotHandler) RunBotHandler(w http.ResponseWriter, r *http.Request) {
 
-	// Headers para streaming
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Connection", "keep-alive")
@@ -42,7 +41,6 @@ func (h *BotHandler) RunBotHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Força o início da resposta imediatamente
 	flusher.Flush()
 
 	ctx := context.Background()
@@ -56,11 +54,9 @@ func (h *BotHandler) RunBotHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Loop síncrono - mantém a conexão aberta até terminar
 	for {
 		logMsg, err := stream.Recv()
 		if err == io.EOF {
-			// Envia mensagem final
 			fmt.Fprintf(w, "<div class='text-green-400 font-bold'>✓ Execução finalizada!</div>")
 			flusher.Flush()
 			break
@@ -72,7 +68,6 @@ func (h *BotHandler) RunBotHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		// Define cor baseada no status
 		colorClass := "text-gray-300"
 		switch logMsg.Status {
 		case "SUCCESS":
@@ -87,7 +82,6 @@ func (h *BotHandler) RunBotHandler(w http.ResponseWriter, r *http.Request) {
 			colorClass, logMsg.Status, logMsg.Line)
 		flusher.Flush()
 
-		// Log no console do servidor também
 		fmt.Printf("[%s] %s: %s\n", bot.BotID, logMsg.Status, logMsg.Line)
 	}
 }
