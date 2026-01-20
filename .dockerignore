@@ -1,0 +1,28 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+
+# Documentation
+*.md
+README*
+LICENSE
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore

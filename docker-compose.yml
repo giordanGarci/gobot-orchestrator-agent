@@ -1,0 +1,26 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "50051:50051"
+    networks:
+      - orchestrator-network
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8080:8080"
+    environment:
+      - GRPC_SERVER_HOST=server
+    depends_on:
+      - server
+    networks:
+      - orchestrator-network
+
+networks:
+  orchestrator-network:
+    driver: bridge
